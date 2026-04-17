@@ -45,9 +45,9 @@ To keep contributing easy, just follow these general guidelines:
 WinDD follows (for the most part) the ISO C++20 standard. 
 As WinDD is targeted for Windows, certain MSVC extensions are allowed. 
 The code does not have to be portable to other operating systems.
-- Classes, structs, namespaces, and types are `PascalCase`.
+- Classes, structs, and types are `PascalCase`.
 - Member functions and variables/struct fields are `camelCase`.
-- Global functions and variables outside an OOP context are `snake_case`.
+- Global functions, namespaces, and variables outside an OOP context are `snake_case`.
 - Local variables and parameters are always snake case.
 - Prefer brevity over verbosity: only use `this->` in ambiguous contexts (`var` could be in `snake_case` or `camelCase`, so use `this->var` to distinguish).
 - Comments should describe why something is done. Well written code should describe the implementation itself.
