@@ -18,7 +18,7 @@ Certain caveats that make WinDD different due to OS design will be addressed bel
 As `dd` has numerous features, implementing all of them at once is infeasible. Below, a table of features is listed in descending priority:
 
 `dd` | WinDD
-- | - 
+--- | ---
 Copy between two named files on disk. | :construction:
 Copy a disk to a disk, a disk to a file, and vice versa. | :construction:
 Block size support (`ibs`, `obs`, `bs`) | :x:
