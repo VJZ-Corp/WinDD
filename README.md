@@ -38,6 +38,21 @@ To keep contributing easy, just follow these general guidelines:
 
 - If you find a bug or have a suggestion, create an issue.
 - If you have a fix or want to add a feature, create a pull request.
-- Follow https://learn.microsoft.com/en-us/windows/win32/learnwin32/windows-coding-conventions, except *do not use Hungarian notation*. Even Microsoft admits: "Internally, the Windows team no longer uses it."
-- To keep languages consistent, the official language of WinDD is C, the same as `dd`.
+- Although the official language `dd` is C, WinDD uses C++ as it has better support for object encapsulation, string manipulation and its abstract data structures are safer than re-implementing in C.
 - Should this project outgrow these guidelines, more details will be published in issue and pull request templates.
+
+## Coding Conventions
+WinDD follows (for the most part) the ISO C++20 standard. 
+As WinDD is targeted for Windows, certain MSVC extensions are allowed. 
+The code does not have to be portable to other operating systems.
+- Classes, structs, namespaces, and types are `PascalCase`.
+- Member functions and variables/struct fields are `camelCase`.
+- Global functions and variables outside an OOP context are `snake_case`.
+- Local variables and parameters are always snake case.
+- Prefer brevity over verbosity: only use `this->` in ambiguous contexts (`var` could be in `snake_case` or `camelCase`, so use `this->var` to distinguish).
+- Comments should describe why something is done. Well written code should describe the implementation itself.
+- Prefer readability over specific language features unless justified (usually a comment should describe if not clear enough).
+- Prefer smart memory management over manual memory management.
+- Treat C++ differently than C, and use the STL rather than implementing from scratch. 
+- Rarely ever use `new/delete`, and **absolutely NO `malloc()` or `free()`!!!**
+- Other conventions can be dealt with on a case-by-case basis.
