@@ -19,11 +19,11 @@ As `dd` has numerous features, implementing all of them at once is infeasible. B
 
 `dd` | WinDD
 --- | ---
-Copy between two named files on disk. | :construction:
+Copy between two named files on disk. | :white_check_mark:
 Copy a disk to a disk, a disk to a file, and vice versa. | :construction:
-Block size support (`ibs`, `obs`, `bs`) | :x:
+Block size support (`ibs`, `obs`, `bs`) | :white_check_mark:
 Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :x:
-`count` option | :x:
+`count` option | :construction:
 Status indicator (`status`) | :x:
 Friendly units (`b`, `k`, `m/M`, `g/G`, `kB`, `MB`, `GB`, etc.) | :x:
 Conversions (`conv`, `cbs`, etc.) | :x:

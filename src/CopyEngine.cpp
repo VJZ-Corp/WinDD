@@ -45,14 +45,7 @@ void CopyEngine::run()
 		//	break; // we are done with file
 
 		DWORD bytes_read;
-		BOOL ok = ReadFile(
-			inputFile,
-			this->buffer,
-			this->args.inputBlockSize,
-			&bytes_read,
-			nullptr
-		);
-
+		BOOL ok = ReadFile(inputFile, this->buffer, this->args.inputBlockSize, &bytes_read, nullptr);
 		if (!ok || !bytes_read)
 			break; // something went wrong with reading
 
@@ -60,13 +53,7 @@ void CopyEngine::run()
 		while (total_written < bytes_read)
 		{
 			DWORD bytes_written;
-			ok = WriteFile(
-				outputFile,
-				this->buffer + total_written,
-				bytes_read - total_written,
-				&bytes_written,
-				nullptr
-			);
+			ok = WriteFile(outputFile, this->buffer + total_written, bytes_read - total_written, &bytes_written, nullptr);
 
 			if (!ok)
 				return; // stop engine to prevent corruption
