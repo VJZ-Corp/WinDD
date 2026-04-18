@@ -10,9 +10,9 @@ class CopyEngine
 	bool applyInputFlags();
 	bool applyOutputFlags();
 
-	bool open(LPCWSTR path);
+	bool open(LPCWSTR path, BOOL truncate, bool isRead);
 	bool allocBuffer(DWORD size);
-	bool displayStatus(bool ongoing);
+	bool displayStatus(); 
 
 public:
 	CopyEngine(Arguments args);

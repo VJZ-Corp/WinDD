@@ -71,6 +71,5 @@ Arguments ArgParser::parse() const
         }
     }
 
-    std::cout << args.status << '\n';
     return args;
 }
