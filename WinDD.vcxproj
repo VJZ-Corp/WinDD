@@ -19,10 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ArgParser.cpp" />
+    <ClCompile Include="src\CopyEngine.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Operation.h" />
+    <ClInclude Include="src\ArgParser.h" />
+    <ClInclude Include="src\CopyEngine.h" />
+    <ClInclude Include="src\Arguments.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
