@@ -1,6 +1,6 @@
 #include <iostream>
-
 #include "ArgParser.h"
+#include "CopyEngine.h"
 
 static void print_help()
 {
@@ -34,6 +34,9 @@ int main(int argc, char* argv[])
     {
         ArgParser arg_parser(argc, argv);
         Arguments args = arg_parser.parse();
+
+        CopyEngine engine(args);
+        engine.run();
     }
     catch (std::invalid_argument& ex)
     {

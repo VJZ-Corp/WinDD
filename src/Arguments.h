@@ -10,7 +10,6 @@ struct Arguments
     // all numerical values are in bytes
     std::size_t inputBlockSize = 512; // Set the input block size to bytes. This makes dd read bytes per block.
     std::size_t outputBlockSize = 512; // Set the output block size to bytes. This makes dd write bytes per block.
-    std::size_t blockSize = 512; // Set both input and output block sizes to bytes: ibs and obs are overwritten.
     std::size_t conversionBlockSize = 0; // Set the conversion block size to bytes.
     
     std::size_t skip = 0;

@@ -42,7 +42,7 @@ Arguments ArgParser::parse() const
         else if (operand == "obs")
             args.outputBlockSize = handle_suffixes(value);
         else if (operand == "bs")
-            args.blockSize = handle_suffixes(value);
+            args.inputBlockSize = args.outputBlockSize = handle_suffixes(value);
         else if (operand == "cbs")
             args.conversionBlockSize = handle_suffixes(value);
         else if (operand == "skip")
