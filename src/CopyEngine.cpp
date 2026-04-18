@@ -4,6 +4,8 @@
 CopyEngine::CopyEngine(Arguments args)
 {
 	this->args = args;
+	blocksCopied = 0;
+	secsElapsed = 0;
 }
 
 CopyEngine::~CopyEngine()
@@ -33,13 +35,16 @@ void CopyEngine::run()
 {
 	if (!performPrechecks())
 		return;
-	std::cout << "prechecks complete!\n";
+
+	while (true)
+	{
+	}
 }
 
 bool CopyEngine::performPrechecks()
 {
 	// request maximum of either IBS or OBS for safety
-	if (!allocBuffer(max(this->args.inputBlockSize, this->args.outputBlockSize)))
+	if (!allocBuffer(max(static_cast<DWORD>(this->args.inputBlockSize), static_cast<DWORD>(this->args.outputBlockSize))))
 		return false;
 
 	if (!open(this->args.inputFilename.c_str()))
@@ -91,4 +96,11 @@ bool CopyEngine::open(LPCSTR path, bool is_read, BOOL truncate)
 	);
 
 	return outputFile != INVALID_HANDLE_VALUE;
+}
+
+bool CopyEngine::allocBuffer(DWORD size)
+{
+	this->buffer = new (std::nothrow) BYTE[size];
+	bufSize = this->buffer ? size : 0;
+	return this->buffer != nullptr;
 }
