@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         Arguments args = arg_parser.parse();
 
         CopyEngine engine(args);
-        engine.run();
+        engine.runCopy();
     }
     catch (std::invalid_argument&)
     {

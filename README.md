@@ -23,9 +23,9 @@ Copy between two named files on disk. | :white_check_mark:
 Copy a disk to a disk, a disk to a file, and vice versa. | :construction:
 Block size support (`ibs`, `obs`, `bs`) | :white_check_mark:
 Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :x:
-`count` option | :construction:
-Status indicator (`status`) | :x:
-Friendly units (`b`, `k`, `m/M`, `g/G`, `kB`, `MB`, `GB`, etc.) | :x:
+`count` option | :white_check_mark:
+Status indicator (`status`) | :construction:
+Friendly units (`b`, `k`, `m/M`, `g/G`, `kB`, `MB`, `GB`, etc.) | :construction:
 Conversions (`conv`, `cbs`, etc.) | :x:
 Other flags (`iflag`, `oflag`, etc.) | :x:
 Help menu (`--help`) | :x:

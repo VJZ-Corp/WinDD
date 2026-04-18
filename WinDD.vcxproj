@@ -22,11 +22,13 @@
     <ClCompile Include="src\ArgParser.cpp" />
     <ClCompile Include="src\CopyEngine.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\WinIO.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ArgParser.h" />
     <ClInclude Include="src\CopyEngine.h" />
     <ClInclude Include="src\Arguments.h" />
+    <ClInclude Include="src\WinIO.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

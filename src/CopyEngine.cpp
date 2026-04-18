@@ -1,25 +1,31 @@
 #include "CopyEngine.h"
 #include <iostream>
+#include "WinIO.h"
 
 CopyEngine::CopyEngine(Arguments args)
 {
 	this->args = args;
-	blocksCopied = 0;
-	secsElapsed = 0;
+
+	inputStream = WinIO::open(this->args.inputFilename.c_str());
+	outputStream = WinIO::open(this->args.outputFilename.c_str(), FALSE);
+
+	// buffer capacity should be max(ibs, obs) for safety
+	bufCapacity = static_cast<DWORD>(max(this->args.inputBlockSize, this->args.outputBlockSize));
+	this->buffer = new (std::nothrow) BYTE[bufCapacity];
 }
 
 CopyEngine::~CopyEngine()
 {
-	if (inputFile != INVALID_HANDLE_VALUE)
+	if (inputStream != INVALID_HANDLE_VALUE)
 	{
-		CloseHandle(inputFile);
-		inputFile = INVALID_HANDLE_VALUE;
+		CloseHandle(inputStream);
+		inputStream = INVALID_HANDLE_VALUE;
 	}
 
-	if (outputFile != INVALID_HANDLE_VALUE)
+	if (outputStream != INVALID_HANDLE_VALUE)
 	{
-		CloseHandle(outputFile);
-		outputFile = INVALID_HANDLE_VALUE;
+		CloseHandle(outputStream);
+		outputStream = INVALID_HANDLE_VALUE;
 	}
 
 	if (this->buffer)
@@ -27,106 +33,83 @@ CopyEngine::~CopyEngine()
 		delete[] this->buffer;
 		this->buffer = nullptr;
 	}
-
-	bufSize = 0;
 }
 
-void CopyEngine::run()
+void CopyEngine::runCopy()
 {
-	if (!performPrechecks())
-		return;
-
-	std::size_t blocks_remaining = this->args.count;
-
-	// count = 0 means read until EOF, which effectively makes this check underflow blocks_remaining (a huge #)
-	while (!this->args.count || blocks_remaining)
+	/* PERFORM PRECHECKS */
+	if (this->buffer == nullptr)
 	{
-		//if (this->args.count && blocks_remaining == 0)
-		//	break; // we are done with file
+		std::cerr << "buf null\n";
+		return;
+	}
 
-		DWORD bytes_read;
-		BOOL ok = ReadFile(inputFile, this->buffer, this->args.inputBlockSize, &bytes_read, nullptr);
-		if (!ok || !bytes_read)
-			break; // something went wrong with reading
+	if (inputStream == INVALID_HANDLE_VALUE)
+	{
+		std::cerr << "dd: failed to open '"<< this->args.inputFilename << "': No such file or directory\n";
+		return;
+	}
 
-		DWORD total_written = 0;
-		while (total_written < bytes_read)
+	if (outputStream == INVALID_HANDLE_VALUE)
+	{
+		std::cerr << "output broken\n";
+		return;
+	}
+
+	// keep track how many bytes from the start of buffer contains meaningful but unwritten data
+	std::size_t meaningful = 0;
+	bool end_of_file = false;
+	std::size_t blocks_read = 0;
+
+	// exit if end of file is reached or count is not 0 but the # of blocks read exceeded demand
+	while (!end_of_file)
+	{
+		/* READ PHASE */
+		if (!this->args.count || blocks_read < this->args.count)
 		{
-			DWORD bytes_written;
-			ok = WriteFile(outputFile, this->buffer + total_written, bytes_read - total_written, &bytes_written, nullptr);
+			// if buffer becomes full at any point, block reading until buffer is uncongested
+			DWORD bytes_to_read = static_cast<DWORD>(min(this->args.inputBlockSize, bufCapacity - meaningful));
+			DWORD bytes_actually_read = 0;
 
-			if (!ok)
-				return; // stop engine to prevent corruption
+			// write starting at meaningful point
+			if (!ReadFile(inputStream, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
+			{
+				std::cerr << "read failed\n";
+				return;
+			}
 
-			total_written += bytes_written;
+			if (bytes_actually_read == 0)
+				end_of_file = true;
+			else
+			{
+				meaningful += bytes_actually_read; // move meaningful boundary
+				blocks_read++;
+			}
 		}
 
-		blocksCopied++;
-		if (this->args.count)
-			blocks_remaining--;
-	}
-}
+		// check whether if there is enough data to write one 'obs'-sized block
+		while (meaningful >= this->args.outputBlockSize)
+		{
+			if (WinIO::write(outputStream, this->buffer, this->args.outputBlockSize))
+			{
+				// move meaningful boundary back by OBS bytes
+				meaningful -= this->args.outputBlockSize;
+				blocksCopied++;
 
-bool CopyEngine::performPrechecks()
-{
-	// request maximum of either IBS or OBS for safety
-	if (!allocBuffer(max(static_cast<DWORD>(this->args.inputBlockSize), static_cast<DWORD>(this->args.outputBlockSize))))
-		return false;
-
-	if (!open(this->args.inputFilename.c_str()))
-		return false; // input file cannot be opened
-
-	if (!open(this->args.outputFilename.c_str(), false))
-		return false; // output file cannot be opened
-
-	return true;
-}
-
-bool CopyEngine::open(LPCSTR path, bool is_read, BOOL truncate)
-{
-	if (is_read && *path == '\0') // path is empty, assume stdin
-	{
-		inputFile = GetStdHandle(STD_INPUT_HANDLE);
-		return inputFile != INVALID_HANDLE_VALUE;
+				// minimal buffer compaction
+				if (meaningful > 0)
+					std::memmove(this->buffer, this->buffer + this->args.outputBlockSize, meaningful);
+			}
+			else
+			{
+				std::cerr << "Write failed\n";
+				return;
+			}
+		}
 	}
 
-	if (*path == '\0') // path is empty AND not in read mode, assume stdout
-	{
-		outputFile = GetStdHandle(STD_OUTPUT_HANDLE);
-		return outputFile != INVALID_HANDLE_VALUE;
-	}
-
-	if (is_read)
-	{
-		inputFile = CreateFileA(
-			path,
-			GENERIC_READ,
-			FILE_SHARE_READ,
-			nullptr,
-			OPEN_EXISTING,
-			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-			nullptr
-		);
-		
-		return inputFile != INVALID_HANDLE_VALUE;
-	}
-
-	outputFile = CreateFileA(
-		path,
-		GENERIC_WRITE,
-		0,
-		nullptr,
-		truncate ? CREATE_ALWAYS : OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-		nullptr
-	);
-
-	return outputFile != INVALID_HANDLE_VALUE;
-}
-
-bool CopyEngine::allocBuffer(DWORD size)
-{
-	this->buffer = new (std::nothrow) BYTE[size];
-	bufSize = this->buffer ? size : 0;
-	return this->buffer != nullptr;
+	// flush one last time if there is still meaningful data leftover
+	if (meaningful > 0)
+		if (!WinIO::write(outputStream, this->buffer, meaningful))
+			std::cerr << "Final flush failed!\n";
 }

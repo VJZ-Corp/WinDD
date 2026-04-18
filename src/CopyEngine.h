@@ -5,30 +5,26 @@
 
 class CopyEngine
 {
-	bool performPrechecks();
 	bool applyConversions();
 	bool applyInputFlags();
 	bool applyOutputFlags();
-	bool open(LPCSTR path, bool is_read = true, BOOL truncate = TRUE);
-
-	bool allocBuffer(DWORD size);
 	bool displayStatus(); 
 
 public:
 	CopyEngine(Arguments args);
 	~CopyEngine();
-	void run();
+	void runCopy();
 
 private:
 	Arguments args;
 
-	std::size_t blocksCopied;
-	std::size_t secsElapsed;
-	
-	HANDLE inputFile = INVALID_HANDLE_VALUE;
-	HANDLE outputFile = INVALID_HANDLE_VALUE;
-
 	BYTE* buffer = nullptr;
-	DWORD bufSize = 0;
+	DWORD bufCapacity;
+
+	std::size_t blocksCopied = 0;
+	std::size_t secsElapsed = 0;
+	
+	HANDLE inputStream = INVALID_HANDLE_VALUE;
+	HANDLE outputStream = INVALID_HANDLE_VALUE;
 };
 
