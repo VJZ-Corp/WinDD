@@ -1,7 +1,9 @@
 #include "CopyEngine.h"
+#include <iostream>
 
 CopyEngine::CopyEngine(Arguments args)
 {
+	this->args = args;
 }
 
 CopyEngine::~CopyEngine()
@@ -29,13 +31,43 @@ CopyEngine::~CopyEngine()
 
 void CopyEngine::run()
 {
+	if (!performPrechecks())
+		return;
+	std::cout << "prechecks complete!\n";
 }
 
-bool CopyEngine::open(LPCWSTR path, BOOL truncate, bool isRead)
+bool CopyEngine::performPrechecks()
 {
-	if (isRead)
+	// request maximum of either IBS or OBS for safety
+	if (!allocBuffer(max(this->args.inputBlockSize, this->args.outputBlockSize)))
+		return false;
+
+	if (!open(this->args.inputFilename.c_str()))
+		return false; // input file cannot be opened
+
+	if (!open(this->args.outputFilename.c_str(), false))
+		return false; // output file cannot be opened
+
+	return true;
+}
+
+bool CopyEngine::open(LPCSTR path, bool is_read, BOOL truncate)
+{
+	if (is_read && path == "") // path is empty, assume stdin
 	{
-		inputFile = CreateFileW(
+		inputFile = GetStdHandle(STD_INPUT_HANDLE);
+		return inputFile != INVALID_HANDLE_VALUE;
+	}
+
+	if (path == "") // path is empty AND not in read mode, assume stdout
+	{
+		outputFile = GetStdHandle(STD_OUTPUT_HANDLE);
+		return outputFile != INVALID_HANDLE_VALUE;
+	}
+
+	if (is_read)
+	{
+		inputFile = CreateFileA(
 			path,
 			GENERIC_READ,
 			FILE_SHARE_READ,
@@ -48,7 +80,7 @@ bool CopyEngine::open(LPCWSTR path, BOOL truncate, bool isRead)
 		return inputFile != INVALID_HANDLE_VALUE;
 	}
 
-	outputFile = CreateFileW(
+	outputFile = CreateFileA(
 		path,
 		GENERIC_WRITE,
 		0,

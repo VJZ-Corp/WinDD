@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
         CopyEngine engine(args);
         engine.run();
     }
-    catch (std::invalid_argument& ex)
+    catch (std::invalid_argument&)
     {
         return 1;
     }

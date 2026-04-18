@@ -5,12 +5,12 @@
 
 class CopyEngine
 {
-	bool validateArgs();
+	bool performPrechecks();
 	bool applyConversions();
 	bool applyInputFlags();
 	bool applyOutputFlags();
+	bool open(LPCSTR path, bool is_read = true, BOOL truncate = TRUE);
 
-	bool open(LPCWSTR path, BOOL truncate, bool isRead);
 	bool allocBuffer(DWORD size);
 	bool displayStatus(); 
 
@@ -20,6 +20,8 @@ public:
 	void run();
 
 private:
+	Arguments args;
+
 	std::size_t blocksCopied;
 	std::size_t secsElapsed;
 	
