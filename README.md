@@ -44,7 +44,7 @@ To keep contributing easy, just follow these general guidelines:
 
 - If you find a bug or have a suggestion, create an issue.
 - If you have a fix or want to add a feature, create a pull request.
-- Although the official language `dd` is C, WinDD uses C++ as it has better support for object encapsulation, string manipulation, and its abstract data structures are safer than reimplementing in C.
+- Although the official language of `dd` is C, WinDD uses C++ as it has better support for object encapsulation, string manipulation, and its abstract data structures are safer than reimplementing them in C.
 - Should this project outgrow these guidelines, more details will be published in issue and pull request templates.
 
 ## Coding Conventions
