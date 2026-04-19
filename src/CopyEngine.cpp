@@ -1,5 +1,7 @@
 #include "CopyEngine.h"
 #include <iostream>
+#include <iomanip>
+#include <cmath>
 #include "WinIO.h"
 
 CopyEngine::CopyEngine(Arguments args)
@@ -63,13 +65,13 @@ void CopyEngine::runCopy()
 	// keep track how many bytes from the start of buffer contains meaningful but unwritten data
 	std::size_t meaningful = 0;
 	bool end_of_file = false;
-	std::size_t blocks_read = 0;
+	startTime = std::chrono::steady_clock::now(); // begin stopwatch
 
 	// exit if end of file is reached or count is not 0 but the # of blocks read exceeded demand
 	while (!end_of_file)
 	{
 		/* READ PHASE */
-		if (!this->args.count || blocks_read < this->args.count)
+		if (!this->args.count || wholeRecordsIn < this->args.count)
 		{
 			// if buffer becomes full at any point, block reading until buffer is uncongested
 			DWORD bytes_to_read = static_cast<DWORD>(min(this->args.inputBlockSize, bufCapacity - meaningful));
@@ -87,7 +89,10 @@ void CopyEngine::runCopy()
 			else
 			{
 				meaningful += bytes_actually_read; // move meaningful boundary
-				blocks_read++;
+				if (bytes_actually_read < this->args.inputBlockSize)
+					partialRecordsIn++;
+				else
+					wholeRecordsIn++;
 			}
 		}
 
@@ -98,7 +103,8 @@ void CopyEngine::runCopy()
 			{
 				// move meaningful boundary back by OBS bytes
 				meaningful -= this->args.outputBlockSize;
-				blocksCopied++;
+				bytesCopied += this->args.outputBlockSize;
+				wholeRecordsOut++;
 
 				// minimal buffer compaction
 				if (meaningful > 0)
@@ -124,5 +130,68 @@ void CopyEngine::runCopy()
 			std::cerr << "\n";
 			return;
 		}
+
+		partialRecordsOut++;
 	}
+
+	displayStatus(false);
+}
+
+void CopyEngine::displayStatus(bool ongoing) const
+{
+	using namespace std::chrono;
+
+	double elapsed_secs = duration<double>(steady_clock::now() - startTime).count();
+
+	if (!ongoing)
+	{
+		std::cout << wholeRecordsIn << "+" << partialRecordsIn << " records in\n"
+			<< wholeRecordsOut << "+" << partialRecordsOut << " records out\n";
+	}
+		
+	double kb = bytesCopied / 1000.0;
+	double kib = bytesCopied / 1024.0;
+	double mb = kb / 1000.0;
+	double mib = kib / 1024.0;
+
+	std::cout << bytesCopied << " bytes";
+
+	if (bytesCopied >= 1024)
+	{
+		std::cout << " (";
+
+		// pick best decimal unit
+		if (mb >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << mb << " MB";
+		else
+			std::cout << std::fixed << std::setprecision(1) << kb << " KB";
+
+		std::cout << ", ";
+
+		// binary unit
+		if (mib >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << mib << " MiB";
+		else
+			std::cout << std::fixed << std::setprecision(1) << kib << " KiB";
+
+		std::cout << ")";
+	}
+
+	double rate = (elapsed_secs > 0.0) ? (bytesCopied / elapsed_secs) : 0.0;
+	const char* unit = "kB/s";
+	rate /= 1024.0; // GNU's dd apparently uses kB in both a binary and decimal context
+
+	if (rate >= 1024.0) 
+	{
+		rate /= 1024.0; 
+		unit = "MB/s"; 
+	}
+
+	if (rate >= 1024.0) 
+	{ 
+		rate /= 1024.0; 
+		unit = "GB/s"; 
+	}
+
+	std::cout << " copied , " << elapsed_secs << " s, " << rate << " " << unit << '\n';
 }
