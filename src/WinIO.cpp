@@ -56,8 +56,12 @@ BOOL WinIO::write(const HANDLE file, const BYTE* data, const DWORD amount_bytes_
 void WinIO::printError()
 {
     DWORD err = GetLastError();
-    if (err == 0)
+    if (err == S_OK)
+    {
+        // most likely wrong file
+        std::cerr << "No such file or directory";
         return;
+    }
 
     LPSTR msg = nullptr;
     DWORD len = FormatMessageA(

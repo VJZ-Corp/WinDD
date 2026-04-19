@@ -12,9 +12,13 @@ They will mostly address changes in the interface due to fundamental differences
 ## Usage
 As WinDD is a near-precise port of `dd`, most usage questions can be answered here: https://www.gnu.org/savannah-checkouts/gnu/coreutils/manual/html_node/dd-invocation.html.
 Certain caveats that make WinDD different due to OS design will be addressed below:
-- Rather than detecting if `if=` or `of=` is a directory, Windows denies access when attempting to open a directory. Therefore, it is impossible to distinguish trying to open a directory versus permissions issue.
+- Rather than detecting if `if=` or `of=` is a directory, Windows denies access when attempting to even open a directory. Therefore, it is impossible to distinguish trying to open a directory versus permissions issue.
 - Certain rare errors may be different from Unix `dd` in their message due to implementation differences.
+- The number of whole/partial blocks reported may differ from `dd` due to implementation differences.
+- Windows will prevent you from reading a physical disk or volume with a custom block size.
+- WinDD will report `\\.\PhysicalDrive#` as not found. You have to run it as administrator.
 
+Due to these caveats, some hints will be provided in WinDD's output. They are best-effort guesses and may not represent the true situation.
 
 ## Support
 As `dd` has numerous features, implementing all of them at once is infeasible. Below, a table of features is listed in descending priority:
@@ -22,11 +26,11 @@ As `dd` has numerous features, implementing all of them at once is infeasible. B
 `dd` | WinDD
 --- | ---
 Copy between two named files on disk. | :white_check_mark:
-Copy a disk to a disk, a disk to a file, and vice versa. | :construction:
+Copy a disk to a disk, a disk to a file, and vice versa. | :white_check_mark:
 Block size support (`ibs`, `obs`, `bs`) | :white_check_mark:
-Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :x:
+Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :construction:
 `count` option | :white_check_mark:
-Status indicator (`status`) | :construction:
+Status indicator (`status`) | :white_check_mark:
 Friendly units (`b`, `k`, `m/M`, `g/G`, `kB`, `MB`, `GB`, etc.) | :construction:
 Conversions (`conv`, `cbs`, etc.) | :x:
 Other flags (`iflag`, `oflag`, etc.) | :x:

@@ -1,8 +1,8 @@
 #include "CopyEngine.h"
 #include <iostream>
-#include <iomanip>
-#include <cmath>
+#include <thread>
 #include "WinIO.h"
+#include "Status.h"
 
 CopyEngine::CopyEngine(Arguments args)
 {
@@ -37,21 +37,20 @@ CopyEngine::~CopyEngine()
 	}
 }
 
-void CopyEngine::runCopy()
+bool CopyEngine::performPrechecks()
 {
-	/* PERFORM PRECHECKS */
 	if (this->buffer == nullptr)
 	{
 		std::cerr << "dd: failed to allocate temporary buffer\n";
-		return;
+		return false;
 	}
 
 	if (inputFile == INVALID_HANDLE_VALUE)
 	{
-		std::cerr << "dd: failed to open '" << this->args.inputFilename << "': "; 
+		std::cerr << "dd: failed to open '" << this->args.inputFilename << "': ";
 		WinIO::printError();
 		std::cerr << "\n";
-		return;
+		return false;
 	}
 
 	if (outputFile == INVALID_HANDLE_VALUE)
@@ -59,12 +58,28 @@ void CopyEngine::runCopy()
 		std::cerr << "dd: failed to open '" << this->args.outputFilename << "': ";
 		WinIO::printError();
 		std::cerr << "\n";
+		return false;
+	}
+
+	return true;
+}
+
+void CopyEngine::runCopyJob()
+{
+	if (!performPrechecks())
+	{
+		// still allow monitoring to start but it will find that isStillCopying is false and die
+		permissionToStart.count_down(); 
 		return;
 	}
+
+	isStillCopying = true;
+	permissionToStart.count_down(); // allow monitoring thread to proceed
 
 	// keep track how many bytes from the start of buffer contains meaningful but unwritten data
 	std::size_t meaningful = 0;
 	bool end_of_file = false;
+	
 	startTime = std::chrono::steady_clock::now(); // begin stopwatch
 
 	// exit if end of file is reached or count is not 0 but the # of blocks read exceeded demand
@@ -80,7 +95,12 @@ void CopyEngine::runCopy()
 			// write starting at meaningful point
 			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
 			{
-				std::cerr << "dd: failed to read from '" << this->args.inputFilename << "'\n";
+				isStillCopying = false;
+				permissionToPrintError.wait();
+
+				std::cerr << "\r\033[2Kdd: failed to read from '" << this->args.inputFilename << "': ";
+				WinIO::printError();
+				std::cerr << "Hint: Block size should be a power of 2 and greater than or equal to 512 when reading volumes or physical drives.\n";
 				return;
 			}
 
@@ -89,6 +109,7 @@ void CopyEngine::runCopy()
 			else
 			{
 				meaningful += bytes_actually_read; // move meaningful boundary
+
 				if (bytes_actually_read < this->args.inputBlockSize)
 					partialRecordsIn++;
 				else
@@ -112,7 +133,10 @@ void CopyEngine::runCopy()
 			}
 			else
 			{
-				std::cerr << "dd: failed to write to '" << this->args.outputFilename << "': ";
+				isStillCopying = false;
+				permissionToPrintError.wait();
+
+				std::cerr << "\r\033[2Kdd: failed to write to '" << this->args.outputFilename << "': ";
 				WinIO::printError();
 				std::cerr << "\n";
 				return;
@@ -125,73 +149,40 @@ void CopyEngine::runCopy()
 	{
 		if (!WinIO::write(outputFile, this->buffer, meaningful))
 		{
-			std::cerr << "dd: failed to write to '" << this->args.outputFilename << "': ";
+			isStillCopying = false;
+			permissionToPrintError.wait();
+
+			std::cerr << "\r\033[2Kdd: failed to write to '" << this->args.outputFilename << "': ";
 			WinIO::printError();
 			std::cerr << "\n";
 			return;
 		}
 
 		partialRecordsOut++;
+		bytesCopied += meaningful;
 	}
 
-	displayStatus(false);
+	isStillCopying = false;
+	Status::displayRecordsSummary(wholeRecordsIn, wholeRecordsOut, partialRecordsIn, partialRecordsOut);
+
+	if (this->args.status != "noxfer")
+		Status::displayXferStats(isStillCopying, startTime, bytesCopied);
 }
 
-void CopyEngine::displayStatus(bool ongoing) const
+void CopyEngine::monitorStatus()
 {
-	using namespace std::chrono;
+	// block checking until copying starts
+	permissionToStart.wait();
 
-	double elapsed_secs = duration<double>(steady_clock::now() - startTime).count();
-
-	if (!ongoing)
+	if (this->args.status == "progress")
 	{
-		std::cout << wholeRecordsIn << "+" << partialRecordsIn << " records in\n"
-			<< wholeRecordsOut << "+" << partialRecordsOut << " records out\n";
-	}
-		
-	double kb = bytesCopied / 1000.0;
-	double kib = bytesCopied / 1024.0;
-	double mb = kb / 1000.0;
-	double mib = kib / 1024.0;
-
-	std::cout << bytesCopied << " bytes";
-
-	if (bytesCopied >= 1024)
-	{
-		std::cout << " (";
-
-		// pick best decimal unit
-		if (mb >= 1.0)
-			std::cout << std::fixed << std::setprecision(1) << mb << " MB";
-		else
-			std::cout << std::fixed << std::setprecision(1) << kb << " KB";
-
-		std::cout << ", ";
-
-		// binary unit
-		if (mib >= 1.0)
-			std::cout << std::fixed << std::setprecision(1) << mib << " MiB";
-		else
-			std::cout << std::fixed << std::setprecision(1) << kib << " KiB";
-
-		std::cout << ")";
+		while (isStillCopying)
+		{
+			Status::displayXferStats(isStillCopying, startTime, bytesCopied.load());
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
 	}
 
-	double rate = (elapsed_secs > 0.0) ? (bytesCopied / elapsed_secs) : 0.0;
-	const char* unit = "kB/s";
-	rate /= 1024.0; // GNU's dd apparently uses kB in both a binary and decimal context
-
-	if (rate >= 1024.0) 
-	{
-		rate /= 1024.0; 
-		unit = "MB/s"; 
-	}
-
-	if (rate >= 1024.0) 
-	{ 
-		rate /= 1024.0; 
-		unit = "GB/s"; 
-	}
-
-	std::cout << " copied , " << elapsed_secs << " s, " << rate << " " << unit << '\n';
+	// loop exited, can handle printing error
+	permissionToPrintError.count_down();
 }

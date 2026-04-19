@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 #include "ArgParser.h"
 #include "CopyEngine.h"
 
@@ -20,7 +21,7 @@ int main(int argc, char* argv[])
         }
         if (arg == "--version")
         {
-            std::cout << "dd (WinDD) 0.1\n"
+            std::cout << "dd (WinDD) 0.5\n"
                 << "Copyright (C) 2026 VJZ Corporation.\n"
                 << "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\n"
                 << "This is free software: you are free to change and redistribute it.\n"
@@ -36,7 +37,11 @@ int main(int argc, char* argv[])
         Arguments args = arg_parser.parse();
 
         CopyEngine engine(args);
-        engine.runCopy();
+        std::thread copier(&CopyEngine::runCopyJob, &engine);
+        std::thread mon(&CopyEngine::monitorStatus, &engine);
+
+        copier.join();
+        mon.join();
     }
     catch (std::invalid_argument)
     {
