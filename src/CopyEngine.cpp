@@ -40,7 +40,7 @@ void CopyEngine::runCopy()
 	/* PERFORM PRECHECKS */
 	if (this->buffer == nullptr)
 	{
-		std::cerr << "buf null\n";
+		std::cerr << "dd: failed to allocate temporary buffer\n";
 		return;
 	}
 
@@ -78,7 +78,7 @@ void CopyEngine::runCopy()
 			// write starting at meaningful point
 			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
 			{
-				std::cerr << "read failed\n";
+				std::cerr << "dd: failed to read from '" << this->args.inputFilename << "'\n";
 				return;
 			}
 
@@ -106,7 +106,9 @@ void CopyEngine::runCopy()
 			}
 			else
 			{
-				std::cerr << "Write failed\n";
+				std::cerr << "dd: failed to write to '" << this->args.outputFilename << "': ";
+				WinIO::printError();
+				std::cerr << "\n";
 				return;
 			}
 		}
@@ -114,6 +116,13 @@ void CopyEngine::runCopy()
 
 	// flush one last time if there is still meaningful data leftover
 	if (meaningful > 0)
+	{
 		if (!WinIO::write(outputFile, this->buffer, meaningful))
-			std::cerr << "Final flush failed!\n";
+		{
+			std::cerr << "dd: failed to write to '" << this->args.outputFilename << "': ";
+			WinIO::printError();
+			std::cerr << "\n";
+			return;
+		}
+	}
 }

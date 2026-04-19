@@ -13,6 +13,8 @@ They will mostly address changes in the interface due to fundamental differences
 As WinDD is a near-precise port of `dd`, most usage questions can be answered here: https://www.gnu.org/savannah-checkouts/gnu/coreutils/manual/html_node/dd-invocation.html.
 Certain caveats that make WinDD different due to OS design will be addressed below:
 - Rather than detecting if `if=` or `of=` is a directory, Windows denies access when attempting to open a directory. Therefore, it is impossible to distinguish trying to open a directory versus permissions issue.
+- Certain rare errors may be different from Unix `dd` in their message due to implementation differences.
+
 
 ## Support
 As `dd` has numerous features, implementing all of them at once is infeasible. Below, a table of features is listed in descending priority:
@@ -38,7 +40,7 @@ To keep contributing easy, just follow these general guidelines:
 
 - If you find a bug or have a suggestion, create an issue.
 - If you have a fix or want to add a feature, create a pull request.
-- Although the official language `dd` is C, WinDD uses C++ as it has better support for object encapsulation, string manipulation and its abstract data structures are safer than re-implementing in C.
+- Although the official language `dd` is C, WinDD uses C++ as it has better support for object encapsulation, string manipulation, and its abstract data structures are safer than reimplementing in C.
 - Should this project outgrow these guidelines, more details will be published in issue and pull request templates.
 
 ## Coding Conventions
@@ -54,5 +56,5 @@ The code does not have to be portable to other operating systems.
 - Prefer readability over specific language features unless justified (usually a comment should describe if not clear enough).
 - Prefer smart memory management over manual memory management unless performant code demands otherwise.
 - Treat C++ differently than C, and use the STL rather than implementing from scratch. 
-- Rarely ever use `new/delete`, and **absolutely NO `malloc()` or `free()`!!!**
+- Rarely ever use `new/delete`, and try to avoid unsafe C idioms unless interfacing with the Windows API.
 - Other conventions can be dealt with on a case-by-case basis.

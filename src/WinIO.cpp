@@ -74,5 +74,7 @@ void WinIO::printError()
         std::cerr << msg;
     else
         std::cerr << "Code " << err << " (unable to format message)";
+
+    LocalFree(msg);
 }
 
