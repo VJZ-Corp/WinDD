@@ -12,7 +12,7 @@ They will mostly address changes in the interface due to fundamental differences
 ## Usage
 As WinDD is a near-precise port of `dd`, most usage questions can be answered here: https://www.gnu.org/savannah-checkouts/gnu/coreutils/manual/html_node/dd-invocation.html.
 Certain caveats that make WinDD different due to OS design will be addressed below:
-- There are currently no caveats that have came up.
+- Rather than detecting if `if=` or `of=` is a directory, Windows denies access when attempting to open a directory. Therefore, it is impossible to distinguish trying to open a directory versus permissions issue.
 
 ## Support
 As `dd` has numerous features, implementing all of them at once is infeasible. Below, a table of features is listed in descending priority:
@@ -45,14 +45,14 @@ To keep contributing easy, just follow these general guidelines:
 WinDD follows (for the most part) the ISO C++20 standard. 
 As WinDD is targeted for Windows, certain MSVC extensions are allowed. 
 The code does not have to be portable to other operating systems.
-- Classes, structs, and types are `PascalCase`.
+- Classes, structs, namespaces, and types are `PascalCase`.
 - Member functions and variables/struct fields are `camelCase`.
-- Global functions, namespaces, and variables outside an OOP context are `snake_case`.
+- Global functions and variables outside an OOP context are `snake_case`.
 - Local variables and parameters are always snake case.
 - Prefer brevity over verbosity: only use `this->` in ambiguous contexts (`var` could be in `snake_case` or `camelCase`, so use `this->var` to distinguish).
 - Comments should describe why something is done. Well written code should describe the implementation itself.
 - Prefer readability over specific language features unless justified (usually a comment should describe if not clear enough).
-- Prefer smart memory management over manual memory management.
+- Prefer smart memory management over manual memory management unless performant code demands otherwise.
 - Treat C++ differently than C, and use the STL rather than implementing from scratch. 
 - Rarely ever use `new/delete`, and **absolutely NO `malloc()` or `free()`!!!**
 - Other conventions can be dealt with on a case-by-case basis.

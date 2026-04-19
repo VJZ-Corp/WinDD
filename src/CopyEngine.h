@@ -24,7 +24,7 @@ private:
 	std::size_t blocksCopied = 0;
 	std::size_t secsElapsed = 0;
 	
-	HANDLE inputStream = INVALID_HANDLE_VALUE;
-	HANDLE outputStream = INVALID_HANDLE_VALUE;
+	HANDLE inputFile = INVALID_HANDLE_VALUE;
+	HANDLE outputFile = INVALID_HANDLE_VALUE;
 };
 

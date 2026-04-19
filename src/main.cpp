@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
         if (arg == "--version")
         {
             std::cout << "dd (WinDD) 0.1\n"
-                << "Cyright (C) 2026 VJZ Corporation.\n"
+                << "Copyright (C) 2026 VJZ Corporation.\n"
                 << "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\n"
                 << "This is free software: you are free to change and redistribute it.\n"
                 << "There is NO WARRANTY, to the extent permitted by law.\n\n"
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
         CopyEngine engine(args);
         engine.runCopy();
     }
-    catch (std::invalid_argument&)
+    catch (std::invalid_argument)
     {
         return 1;
     }

@@ -6,8 +6,8 @@ CopyEngine::CopyEngine(Arguments args)
 {
 	this->args = args;
 
-	inputStream = WinIO::open(this->args.inputFilename.c_str());
-	outputStream = WinIO::open(this->args.outputFilename.c_str(), FALSE);
+	inputFile = WinIO::open(this->args.inputFilename.c_str());
+	outputFile = WinIO::open(this->args.outputFilename.c_str(), FALSE);
 
 	// buffer capacity should be max(ibs, obs) for safety
 	bufCapacity = static_cast<DWORD>(max(this->args.inputBlockSize, this->args.outputBlockSize));
@@ -16,16 +16,16 @@ CopyEngine::CopyEngine(Arguments args)
 
 CopyEngine::~CopyEngine()
 {
-	if (inputStream != INVALID_HANDLE_VALUE)
+	if (inputFile != INVALID_HANDLE_VALUE)
 	{
-		CloseHandle(inputStream);
-		inputStream = INVALID_HANDLE_VALUE;
+		CloseHandle(inputFile);
+		inputFile = INVALID_HANDLE_VALUE;
 	}
 
-	if (outputStream != INVALID_HANDLE_VALUE)
+	if (outputFile != INVALID_HANDLE_VALUE)
 	{
-		CloseHandle(outputStream);
-		outputStream = INVALID_HANDLE_VALUE;
+		CloseHandle(outputFile);
+		outputFile = INVALID_HANDLE_VALUE;
 	}
 
 	if (this->buffer)
@@ -44,15 +44,19 @@ void CopyEngine::runCopy()
 		return;
 	}
 
-	if (inputStream == INVALID_HANDLE_VALUE)
+	if (inputFile == INVALID_HANDLE_VALUE)
 	{
-		std::cerr << "dd: failed to open '"<< this->args.inputFilename << "': No such file or directory\n";
+		std::cerr << "dd: failed to open '" << this->args.inputFilename << "': "; 
+		WinIO::printError();
+		std::cerr << "\n";
 		return;
 	}
 
-	if (outputStream == INVALID_HANDLE_VALUE)
+	if (outputFile == INVALID_HANDLE_VALUE)
 	{
-		std::cerr << "output broken\n";
+		std::cerr << "dd: failed to open '" << this->args.outputFilename << "': ";
+		WinIO::printError();
+		std::cerr << "\n";
 		return;
 	}
 
@@ -72,7 +76,7 @@ void CopyEngine::runCopy()
 			DWORD bytes_actually_read = 0;
 
 			// write starting at meaningful point
-			if (!ReadFile(inputStream, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
+			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
 			{
 				std::cerr << "read failed\n";
 				return;
@@ -90,7 +94,7 @@ void CopyEngine::runCopy()
 		// check whether if there is enough data to write one 'obs'-sized block
 		while (meaningful >= this->args.outputBlockSize)
 		{
-			if (WinIO::write(outputStream, this->buffer, this->args.outputBlockSize))
+			if (WinIO::write(outputFile, this->buffer, this->args.outputBlockSize))
 			{
 				// move meaningful boundary back by OBS bytes
 				meaningful -= this->args.outputBlockSize;
@@ -110,6 +114,6 @@ void CopyEngine::runCopy()
 
 	// flush one last time if there is still meaningful data leftover
 	if (meaningful > 0)
-		if (!WinIO::write(outputStream, this->buffer, meaningful))
+		if (!WinIO::write(outputFile, this->buffer, meaningful))
 			std::cerr << "Final flush failed!\n";
 }

@@ -1,4 +1,5 @@
 #include "WinIO.h"
+#include <iostream>
 
 HANDLE WinIO::open(const LPCSTR path, const BOOL is_reading, const BOOL truncate)
 {
@@ -51,3 +52,27 @@ BOOL WinIO::write(const HANDLE file, const BYTE* data, const DWORD amount_bytes_
 
     return TRUE;
 }
+
+void WinIO::printError()
+{
+    DWORD err = GetLastError();
+    if (err == 0)
+        return;
+
+    LPSTR msg = nullptr;
+    DWORD len = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        err,
+        0, // default language
+        (LPSTR)&msg, // WinAPI is picky: have to use C-style raw casting
+        0,
+        nullptr
+    );
+
+    if (len && msg)
+        std::cerr << msg;
+    else
+        std::cerr << "Code " << err << " (unable to format message)";
+}
+
