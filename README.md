@@ -55,10 +55,10 @@ The code does not have to be portable to other operating systems.
 - Member functions and variables/struct fields are `camelCase`.
 - Global functions and variables outside an OOP context are `snake_case`.
 - Local variables and parameters are always snake case.
-- Prefer brevity over verbosity: only use `this->` in ambiguous contexts (`var` could be in `snake_case` or `camelCase`, so use `this->var` to distinguish).
+- Prefer brevity over verbosity: only use `this->` in ambiguous contexts (`var` could be in `snake_case` or `camelCase`, so use `this->var` to distinguish that `var` is a member field and not a local variable).
 - Comments should describe why something is done. Well written code should describe the implementation itself.
 - Prefer readability over specific language features unless justified (usually a comment should describe if not clear enough).
 - Prefer smart memory management over manual memory management unless performant code demands otherwise.
-- Treat C++ differently than C, and use the STL rather than implementing from scratch. 
+- Treat C++ differently from C, and use the STL rather than implementing common data structures from scratch. 
 - Rarely ever use `new/delete`, and try to avoid unsafe C idioms unless interfacing with the Windows API.
 - Other conventions can be dealt with on a case-by-case basis.
