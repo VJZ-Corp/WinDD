@@ -86,7 +86,7 @@ void CopyEngine::runCopyJob()
 	while (!end_of_file)
 	{
 		/* READ PHASE */
-		if (!this->args.count || wholeRecordsIn < this->args.count)
+		if (!this->args.count || wholeRecordsIn + partialRecordsIn < this->args.count)
 		{
 			// if buffer becomes full at any point, block reading until buffer is uncongested
 			DWORD bytes_to_read = static_cast<DWORD>(min(this->args.inputBlockSize, bufCapacity - meaningful));
@@ -116,6 +116,8 @@ void CopyEngine::runCopyJob()
 					wholeRecordsIn++;
 			}
 		}
+		else
+			end_of_file = true; // done reading: finish writing and exit loop
 
 		// check whether if there is enough data to write one 'obs'-sized block
 		while (meaningful >= this->args.outputBlockSize)

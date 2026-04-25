@@ -12,20 +12,21 @@ void Status::displayXferStats(bool ongoing, std::chrono::steady_clock::time_poin
 {
 	double elapsed_secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
 
-	double kb = bytes_copied / 1000.0;
-	double kib = bytes_copied / 1024.0;
-	double mb = kb / 1000.0;
-	double mib = kib / 1024.0;
-	double gb = mb / 1000.0;
-	double gib = mib / 1024.0;
-
 	if (ongoing)
 		std::cout << "\r\033[2K"; // move cursor to beginning and wipe line if status printing ongoing
 
 	std::cout << bytes_copied << " bytes";
 
+	double kb = bytes_copied / 1000.0;
+	double kib = bytes_copied / 1024.0;
+
 	if (bytes_copied >= 1024)
 	{
+		double mb = kb / 1000.0;
+		double mib = kib / 1024.0;
+		double gb = mb / 1000.0;
+		double gib = mib / 1024.0;
+
 		std::cout << " (";
 
 		// pick best decimal unit

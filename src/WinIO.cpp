@@ -81,4 +81,3 @@ void WinIO::printError()
 
     LocalFree(msg);
 }
-
