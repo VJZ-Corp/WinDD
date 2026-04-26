@@ -99,13 +99,13 @@ void CopyEngine::runCopyJob()
 	while (!end_of_file)
 	{
 		/* READ PHASE */
-		if (!this->args.count || wholeRecordsIn + partialRecordsIn < this->args.count)
+		if (!this->args.count || bytesCopied <= this->args.count * this->args.inputBlockSize)
 		{
 			// if buffer becomes full at any point OR disk size is reached, block reading until buffer is uncongested
 			DWORD bytes_to_read = min(min(this->args.inputBlockSize, bufCapacity - meaningful), disk_size - bytesCopied);
+			DWORD bytes_actually_read = 0;
 
 			// read starting at meaningful point
-			DWORD bytes_actually_read = 0;
 			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
 			{
 				inProgressCopying = false;
