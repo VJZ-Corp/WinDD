@@ -12,7 +12,7 @@ They will mostly address changes in the interface due to fundamental differences
 ## Usage
 As WinDD is a near-precise port of `dd`, most usage questions can be answered here: https://www.gnu.org/savannah-checkouts/gnu/coreutils/manual/html_node/dd-invocation.html.
 Certain caveats that make WinDD different due to OS design will be addressed below:
-- WinDD will copy at least (but not exactly) `count` × `ibs` bytes if `ibs` is not a power of 2 due to Windows' `ReadFile(...)` not always reading `ibs` bytes at a time. This is a fixable bug. Please make a PR if you have a fix.
+- WinDD will copy at least (but not exactly) `count` Ã— `ibs` bytes if `ibs` is not a power of 2 due to Windows' `ReadFile(...)` not always reading `ibs` bytes at a time. *This is a fixable bug.* **Please make a PR if you have a fix.**
 - Suffixes greater than or equal to 16 exbibytes (zebibyte, zettabyte, yottabyte, etc.) are not supported due to the width of integers on 64-bit systems.
 - Rather than detecting if `if=` or `of=` is a directory, Windows denies access when attempting to even open a directory. Therefore, it is impossible to distinguish trying to open a directory versus permissions issue.
 - Certain rare errors may be different from Unix `dd` in their message due to implementation differences.
