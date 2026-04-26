@@ -28,6 +28,7 @@ private:
 	HANDLE outputFile = INVALID_HANDLE_VALUE;
 
 	std::atomic<std::size_t> bytesCopied = 0;
+	bool checkDiskSize = false;
 	std::chrono::steady_clock::time_point startTime;
 
 	std::size_t wholeRecordsIn = 0;

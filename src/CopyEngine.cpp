@@ -7,10 +7,11 @@
 CopyEngine::CopyEngine(Arguments args)
 {
 	this->args = args;
+	checkDiskSize = (this->args.inputFilename.find("\\\\.\\PhysicalDrive") == 0);
 
 	inputFile = WinIO::open(this->args.inputFilename.c_str());
 	outputFile = WinIO::open(this->args.outputFilename.c_str(), FALSE);
-
+	
 	// buffer capacity should be max(ibs, obs) for safety
 	bufCapacity = static_cast<DWORD>(max(this->args.inputBlockSize, this->args.outputBlockSize));
 	this->buffer = new (std::nothrow) BYTE[bufCapacity];
@@ -91,6 +92,9 @@ void CopyEngine::runCopyJob()
 			// if buffer becomes full at any point, block reading until buffer is uncongested
 			DWORD bytes_to_read = static_cast<DWORD>(min(this->args.inputBlockSize, bufCapacity - meaningful));
 			DWORD bytes_actually_read = 0;
+
+			if (checkDiskSize) // input is a physical disk
+				bytes_to_read = min(bytes_to_read, WinIO::getPhysicalDriveSize(inputFile) - bytesCopied);
 
 			// write starting at meaningful point
 			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
