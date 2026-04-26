@@ -17,9 +17,9 @@ public:
 
 private:
 	Arguments args;
-	std::latch permissionToStart{ 1 };
+	std::latch permissionToStartMonitoring{ 1 };
 	std::latch permissionToPrintError{ 1 };
-	std::atomic<bool> isStillCopying{ false };
+	std::atomic<bool> inProgressCopying{ false };
 
 	BYTE* buffer = nullptr;
 	DWORD bufCapacity;
@@ -28,7 +28,6 @@ private:
 	HANDLE outputFile = INVALID_HANDLE_VALUE;
 
 	std::atomic<std::size_t> bytesCopied = 0;
-	bool checkDiskSize = false;
 	std::chrono::steady_clock::time_point startTime;
 
 	std::size_t wholeRecordsIn = 0;

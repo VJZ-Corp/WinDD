@@ -7,13 +7,12 @@
 CopyEngine::CopyEngine(Arguments args)
 {
 	this->args = args;
-	checkDiskSize = (this->args.inputFilename.find("\\\\.\\PhysicalDrive") == 0);
 
-	inputFile = WinIO::open(this->args.inputFilename.c_str());
-	outputFile = WinIO::open(this->args.outputFilename.c_str(), FALSE);
+	inputFile = WinIO::open(args.inputFilename.c_str());
+	outputFile = WinIO::open(args.outputFilename.c_str(), FALSE);
 	
 	// buffer capacity should be max(ibs, obs) for safety
-	bufCapacity = static_cast<DWORD>(max(this->args.inputBlockSize, this->args.outputBlockSize));
+	bufCapacity = static_cast<DWORD>(max(args.inputBlockSize, args.outputBlockSize));
 	this->buffer = new (std::nothrow) BYTE[bufCapacity];
 }
 
@@ -50,7 +49,7 @@ bool CopyEngine::performPrechecks()
 	{
 		std::cerr << "dd: failed to open '" << this->args.inputFilename << "': ";
 		WinIO::printError();
-		std::cerr << "\n";
+		std::cerr << "\nHint: are you admin?\n";
 		return false;
 	}
 
@@ -58,7 +57,7 @@ bool CopyEngine::performPrechecks()
 	{
 		std::cerr << "dd: failed to open '" << this->args.outputFilename << "': ";
 		WinIO::printError();
-		std::cerr << "\n";
+		std::cerr << "\nHint: are you admin?\n";
 		return false;
 	}
 
@@ -70,18 +69,31 @@ void CopyEngine::runCopyJob()
 	if (!performPrechecks())
 	{
 		// still allow monitoring to start but it will find that isStillCopying is false and die
-		permissionToStart.count_down(); 
+		permissionToStartMonitoring.count_down(); 
 		return;
 	}
 
-	isStillCopying = true;
-	permissionToStart.count_down(); // allow monitoring thread to proceed
+	// physical drives do not notify EOF, need to check disk size
+	long long disk_size = MAXLONGLONG;
+	if (args.inputFilename.find("\\\\.\\PhysicalDrive") == 0)
+		disk_size = WinIO::getPhysicalDiskSize(inputFile);
+
+	if (disk_size < 0)
+	{
+		std::cerr << "\r\033[2Kdd: failed to get size of '" << this->args.inputFilename << "': ";
+		WinIO::printError();
+		return;
+	}
 
 	// keep track how many bytes from the start of buffer contains meaningful but unwritten data
 	std::size_t meaningful = 0;
 	bool end_of_file = false;
-	
-	startTime = std::chrono::steady_clock::now(); // begin stopwatch
+
+	inProgressCopying = true;
+	permissionToStartMonitoring.count_down(); // allow monitoring thread to proceed
+
+	// begin stopwatch
+	startTime = std::chrono::steady_clock::now(); 
 
 	// exit if end of file is reached or count is not 0 but the # of blocks read exceeded demand
 	while (!end_of_file)
@@ -89,22 +101,20 @@ void CopyEngine::runCopyJob()
 		/* READ PHASE */
 		if (!this->args.count || wholeRecordsIn + partialRecordsIn < this->args.count)
 		{
-			// if buffer becomes full at any point, block reading until buffer is uncongested
-			DWORD bytes_to_read = static_cast<DWORD>(min(this->args.inputBlockSize, bufCapacity - meaningful));
+			// if buffer becomes full at any point OR disk size is reached, block reading until buffer is uncongested
+			DWORD bytes_to_read = min(min(this->args.inputBlockSize, bufCapacity - meaningful), disk_size - bytesCopied);
+
+			// read starting at meaningful point
 			DWORD bytes_actually_read = 0;
-
-			if (checkDiskSize) // input is a physical disk
-				bytes_to_read = min(bytes_to_read, WinIO::getPhysicalDriveSize(inputFile) - bytesCopied);
-
-			// write starting at meaningful point
 			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
 			{
-				isStillCopying = false;
+				inProgressCopying = false;
 				permissionToPrintError.wait();
 
 				std::cerr << "\r\033[2Kdd: failed to read from '" << this->args.inputFilename << "': ";
 				WinIO::printError();
 				std::cerr << "Hint: Block size should be a power of 2 and greater than or equal to 512 when reading volumes or physical drives.\n";
+				
 				return;
 			}
 
@@ -139,12 +149,12 @@ void CopyEngine::runCopyJob()
 			}
 			else
 			{
-				isStillCopying = false;
+				inProgressCopying = false;
 				permissionToPrintError.wait();
 
 				std::cerr << "\r\033[2Kdd: failed to write to '" << this->args.outputFilename << "': ";
 				WinIO::printError();
-				std::cerr << "\n";
+				
 				return;
 			}
 		}
@@ -155,12 +165,12 @@ void CopyEngine::runCopyJob()
 	{
 		if (!WinIO::write(outputFile, this->buffer, meaningful))
 		{
-			isStillCopying = false;
+			inProgressCopying = false;
 			permissionToPrintError.wait();
 
 			std::cerr << "\r\033[2Kdd: failed to write to '" << this->args.outputFilename << "': ";
 			WinIO::printError();
-			std::cerr << "\n";
+			
 			return;
 		}
 
@@ -168,23 +178,23 @@ void CopyEngine::runCopyJob()
 		bytesCopied += meaningful;
 	}
 
-	isStillCopying = false;
+	inProgressCopying = false;
 	Status::displayRecordsSummary(wholeRecordsIn, wholeRecordsOut, partialRecordsIn, partialRecordsOut);
 
 	if (this->args.status != "noxfer")
-		Status::displayXferStats(isStillCopying, startTime, bytesCopied);
+		Status::displayXferStats(inProgressCopying, startTime, bytesCopied);
 }
 
 void CopyEngine::monitorStatus()
 {
 	// block checking until copying starts
-	permissionToStart.wait();
+	permissionToStartMonitoring.wait();
 
 	if (this->args.status == "progress")
 	{
-		while (isStillCopying)
+		while (inProgressCopying)
 		{
-			Status::displayXferStats(isStillCopying, startTime, bytesCopied.load());
+			Status::displayXferStats(inProgressCopying, startTime, bytesCopied.load());
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 	}

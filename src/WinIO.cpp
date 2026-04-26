@@ -53,7 +53,7 @@ BOOL WinIO::write(const HANDLE file, const BYTE* data, const DWORD amount_bytes_
     return TRUE;
 }
 
-LONGLONG WinIO::getPhysicalDriveSize(HANDLE device)
+LONGLONG WinIO::getPhysicalDiskSize(HANDLE device)
 {
     GET_LENGTH_INFORMATION info{};
     BOOL ok = DeviceIoControl(
