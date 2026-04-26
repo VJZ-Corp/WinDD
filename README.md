@@ -12,7 +12,7 @@ They will mostly address changes in the interface due to fundamental differences
 ## Usage
 As WinDD is a near-precise port of `dd`, most usage questions can be answered here: https://www.gnu.org/savannah-checkouts/gnu/coreutils/manual/html_node/dd-invocation.html.
 Certain caveats that make WinDD different due to OS design will be addressed below:
-- https://github.com/VJZ-Corp/WinDD/issues/1
+- Please see https://github.com/VJZ-Corp/WinDD/issues for any bugs that may impact usage.
 - Suffixes greater than or equal to 16 exbibytes (zebibyte, zettabyte, yottabyte, etc.) are not supported due to the width of integers on 64-bit systems.
 - Rather than detecting if `if=` or `of=` is a directory, Windows denies access when attempting to even open a directory. Therefore, it is impossible to distinguish trying to open a directory versus permissions issue.
 - Certain rare errors may be different from Unix `dd` in their message due to implementation differences.
