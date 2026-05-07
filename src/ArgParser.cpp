@@ -101,6 +101,82 @@ static std::size_t handle_suffixes(const std::string& value)
     }
 }
 
+static short parse_flags(std::string_view input, bool is_conv)
+{
+    short flags = 0; // no flags
+    size_t start = 0;
+
+    while (start < input.size())
+    {
+        size_t end = input.find(',', start);
+        if (end == std::string_view::npos)
+            end = input.size();
+
+        std::string_view flag = input.substr(start, end - start);
+
+        if (is_conv)
+        {
+            if (flag == "ascii")
+                flags |= Conversion::ASCII;
+            else if (flag == "ebcdic")
+                flags |= Conversion::EBCDIC;
+            else if (flag == "ibm")
+                flags |= Conversion::IBM;
+            else if (flag == "block")
+                flags |= Conversion::BLOCK;
+            else if (flag == "unblock")
+                flags |= Conversion::UNBLOCK;
+            else if (flag == "lcase")
+                flags |= Conversion::LCASE;
+            else if (flag == "ucase")
+                flags |= Conversion::UCASE;
+            else if (flag == "sparse")
+                flags |= Conversion::SPARSE;
+            else if (flag == "swab")
+                flags |= Conversion::SWAB;
+            else if (flag == "sync")
+                flags |= Conversion::SYNC;
+            else if (flag == "excl")
+                flags |= Conversion::EXCL;
+            else if (flag == "nocreat")
+                flags |= Conversion::NOCREAT;
+            else if (flag == "notrunc")
+                flags |= Conversion::NOTRUNC;
+            else if (flag == "noerror")
+                flags |= Conversion::NOERR;
+            else if (flag == "fdatasync")
+                flags |= Conversion::FDATASYNC;
+            else if (flag == "fsync")
+                flags |= Conversion::FSYNC;
+            else
+            {
+                std::cerr << "dd: invalid conversion: '" << flag << "'\n"
+                          << "Try 'dd --help' for more information.\n";
+                throw std::invalid_argument("conversion not recognized");
+            }
+
+            start = end + 1;
+        }
+    }
+
+    // handle mutually exclusive flags
+    if (is_conv)
+    {
+        if (IS_SET(flags, Conversion::LCASE) && IS_SET(flags, Conversion::UCASE))
+            std::cerr << "dd: cannot combine lcase and ucase\n";
+        else if (IS_SET(flags, Conversion::EXCL) && IS_SET(flags, Conversion::NOCREAT))
+            std::cerr << "dd: cannot combine excl and nocreat\n";
+        else if (IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::EBCDIC)
+                || IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::IBM)
+                || IS_SET(flags, Conversion::EBCDIC) && IS_SET(flags, Conversion::IBM)
+                || IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::EBCDIC) && IS_SET(flags, Conversion::IBM))
+            std::cerr << "dd: cannot combine any two of {ascii,ebcdic,ibm}\n";
+        throw std::invalid_argument("mutually exclusive conversions");
+    }
+    
+    return flags;
+}
+
 Arguments ArgParser::parse() const
 {
     Arguments args;
@@ -128,7 +204,7 @@ Arguments ArgParser::parse() const
         else if (operand == "status")
             args.status = value;
         else if (operand == "conv")
-            args.conversion = value;
+            args.conversions = parse_flags(value, true);
         else if (operand == "iflag")
             args.inputFlags = value;
         else if (operand == "oflag")
