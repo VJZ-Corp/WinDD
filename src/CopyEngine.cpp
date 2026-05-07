@@ -8,8 +8,8 @@ CopyEngine::CopyEngine(Arguments args)
 {
 	this->args = args;
 
-	inputFile = WinIO::open(args.inputFilename.c_str());
-	outputFile = WinIO::open(args.outputFilename.c_str(), FALSE);
+	inputFile = WinIO::open(args.inputFilename.c_str(), args.inputSeek);
+	outputFile = WinIO::open(args.outputFilename.c_str(), args.outputSeek, FALSE);
 	
 	// buffer capacity should be max(ibs, obs) for safety
 	bufCapacity = static_cast<DWORD>(max(args.inputBlockSize, args.outputBlockSize));
