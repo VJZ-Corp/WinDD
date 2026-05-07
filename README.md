@@ -31,7 +31,7 @@ As `dd` has numerous features, implementing all of them at once is infeasible. B
 Copy between two named files on disk. | :white_check_mark:
 Copy a disk to a disk, a disk to a file, and vice versa. | :white_check_mark:
 Block size support (`ibs`, `obs`, `bs`) | :white_check_mark:
-Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :construction:
+Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :white_check_mark:
 `count` option | :white_check_mark:
 Status indicator (`status`) | :white_check_mark:
 Friendly units (`b`, `k`, `M`, `G`, `kB`, `MB`, `GB`, etc.) | :white_check_mark:
