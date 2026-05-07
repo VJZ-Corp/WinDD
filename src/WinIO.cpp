@@ -1,7 +1,7 @@
 #include "WinIO.h"
 #include <iostream>
 
-HANDLE WinIO::open(const LPCSTR path, const BOOL is_reading, const BOOL truncate)
+HANDLE WinIO::open(const LPCSTR path, const BOOL is_reading, const BOOL truncate, const ULONGLONG offset)
 {
     if (is_reading && *path == '\0') // path is empty (default), assume stdin
         return GetStdHandle(STD_INPUT_HANDLE);
@@ -9,28 +9,23 @@ HANDLE WinIO::open(const LPCSTR path, const BOOL is_reading, const BOOL truncate
     if (*path == '\0') // path is empty AND not in read mode, assume stdout
         return GetStdHandle(STD_OUTPUT_HANDLE);
 
-    if (is_reading)
-    {
-        return CreateFileA(
-            path,
-            GENERIC_READ,
-            FILE_SHARE_READ,
-            nullptr,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-            nullptr
-        );
-    }
-
-    return CreateFileA(
+    HANDLE file = CreateFileA(
         path,
-        GENERIC_WRITE,
-        NULL,
+        is_reading ? GENERIC_READ : GENERIC_WRITE,
+        is_reading ? FILE_SHARE_READ : NULL,
         nullptr,
         truncate ? CREATE_ALWAYS : OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
         nullptr
     );
+    
+    if (file == INVALID_HANDLE_VALUE)
+        return file;
+
+    LARGE_INTEGER large_int;
+    large_int.QuadPart = offset;
+    SetFilePointerEx(file, large_int, nullptr, FILE_BEGIN);
+    return file;
 }
 
 BOOL WinIO::write(const HANDLE file, const BYTE* data, const DWORD amount_bytes_to_write)
