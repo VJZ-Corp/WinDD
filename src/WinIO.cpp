@@ -1,7 +1,7 @@
 #include "WinIO.h"
 #include <iostream>
 
-HANDLE WinIO::open(const LPCSTR path, const BOOL is_reading, const BOOL truncate, const ULONGLONG offset)
+HANDLE WinIO::open(const LPCSTR path, const ULONGLONG offset, const BOOL is_reading, const BOOL truncate)
 {
     if (is_reading && *path == '\0') // path is empty (default), assume stdin
         return GetStdHandle(STD_INPUT_HANDLE);
@@ -14,7 +14,7 @@ HANDLE WinIO::open(const LPCSTR path, const BOOL is_reading, const BOOL truncate
         is_reading ? GENERIC_READ : GENERIC_WRITE,
         is_reading ? FILE_SHARE_READ : NULL,
         nullptr,
-        truncate ? CREATE_ALWAYS : OPEN_EXISTING,
+        OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
         nullptr
     );
@@ -22,7 +22,7 @@ HANDLE WinIO::open(const LPCSTR path, const BOOL is_reading, const BOOL truncate
     if (file == INVALID_HANDLE_VALUE)
         return file;
 
-    LARGE_INTEGER large_int;
+    LARGE_INTEGER large_int{};
     large_int.QuadPart = offset;
     SetFilePointerEx(file, large_int, nullptr, FILE_BEGIN);
     return file;
@@ -51,7 +51,7 @@ BOOL WinIO::write(const HANDLE file, const BYTE* data, const DWORD amount_bytes_
 LONGLONG WinIO::getPhysicalDiskSize(HANDLE device)
 {
     GET_LENGTH_INFORMATION info{};
-    BOOL ok = DeviceIoControl(
+    return DeviceIoControl(
         device,
         IOCTL_DISK_GET_LENGTH_INFO,
         nullptr,
@@ -60,12 +60,7 @@ LONGLONG WinIO::getPhysicalDiskSize(HANDLE device)
         sizeof(info),
         nullptr,
         nullptr
-    );
-
-    if (ok)
-        return info.Length.QuadPart;
-    else
-        return -1;
+    ) ? info.Length.QuadPart : -1;
 }
 
 void WinIO::printError()
