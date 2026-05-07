@@ -35,7 +35,7 @@ Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :white_check_mark:
 `count` option | :white_check_mark:
 Status indicator (`status`) | :white_check_mark:
 Friendly units (`b`, `k`, `M`, `G`, `kB`, `MB`, `GB`, etc.) | :white_check_mark:
-Conversions (`conv`, `cbs`, etc.) | :x:
+Conversions (`conv`, `cbs`, etc.) | :construction:
 Other flags (`iflag`, `oflag`, etc.) | :x:
 POSIX/GNU multipliers (`b`, `c`, `w`, `xm`, `k`) | :x:
 Help menu (`--help`) | :construction:
