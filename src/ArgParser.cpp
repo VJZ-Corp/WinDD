@@ -119,13 +119,9 @@ Arguments ArgParser::parse() const
             args.inputBlockSize = args.outputBlockSize = handle_suffixes(value);
         else if (operand == "cbs")
             args.conversionBlockSize = handle_suffixes(value);
-        else if (operand == "skip")
-            args.skip = handle_suffixes(value);
-        else if (operand == "iseek")
+        else if (operand == "iseek" || operand == "skip")
             args.inputSeek = handle_suffixes(value);
-        else if (operand == "seek")
-            args.seek = handle_suffixes(value);
-        else if (operand == "oseek")
+        else if (operand == "oseek" || operand == "seek")
             args.outputSeek = handle_suffixes(value);
         else if (operand == "count")
             args.count = handle_suffixes(value);

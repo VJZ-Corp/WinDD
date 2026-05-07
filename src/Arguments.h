@@ -12,9 +12,7 @@ struct Arguments
     std::size_t outputBlockSize = 512; // Set the output block size to bytes. This makes dd write bytes per block.
     std::size_t conversionBlockSize = 0; // Set the conversion block size to bytes.
     
-    std::size_t skip = 0;
     std::size_t inputSeek = 0; // Skip n ‘ibs’-byte blocks in the input file before copying.
-    std::size_t seek = 0;
     std::size_t outputSeek = 0; // Skip n ‘obs’ - byte blocks in the output file before truncating or copying
     std::size_t count = 0; // Copy n ‘ibs’-byte blocks from the input file, instead of everything until the end of the file.
 
