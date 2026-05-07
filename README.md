@@ -19,7 +19,7 @@ Certain caveats that make WinDD different due to OS design will be addressed bel
 - The number of whole/partial blocks reported may differ from `dd` due to implementation differences.
 - Windows will prevent you from reading a physical disk or volume with a custom block size.
 - WinDD will report `\\.\PhysicalDrive#` as not found. You have to run it as administrator.
-- Seeking is not supported for standard input and output.
+- Skipping and seeking are not supported for standard input and output.
 
 Due to these caveats, some hints will be provided in WinDD's output. They are best-effort guesses and may not represent the true situation.
 
