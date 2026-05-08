@@ -8,6 +8,7 @@
 class CopyEngine
 {
 	bool performPrechecks();
+	inline bool writeBlock(std::size_t block_sz);
 
 public:
 	CopyEngine(Arguments args);

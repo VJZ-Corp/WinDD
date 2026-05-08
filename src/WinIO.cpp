@@ -1,31 +1,70 @@
 #include "WinIO.h"
 #include <iostream>
 
-HANDLE WinIO::open(const LPCSTR path, const ULONGLONG offset, const BOOL is_reading, const BOOL truncate)
+HANDLE WinIO::open(const Arguments& args, const BOOL is_reading)
 {
-    if (is_reading && *path == '\0') // path is empty (default), assume stdin
-        return GetStdHandle(STD_INPUT_HANDLE);
+    if (is_reading)
+    {
+        if (*args.inputFilename.c_str() == '\0') // path is empty (default), assume stdin
+            return GetStdHandle(STD_INPUT_HANDLE);
 
-    if (*path == '\0') // path is empty AND not in read mode, assume stdout
+        HANDLE fptr = CreateFileA(
+            args.inputFilename.c_str(),
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            nullptr,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+            nullptr
+        );
+
+        if (fptr == INVALID_HANDLE_VALUE)
+            return fptr;
+
+        // skipping input by specified offset
+        LARGE_INTEGER large_int{};
+        large_int.QuadPart = args.inputSeek;
+        SetFilePointerEx(fptr, large_int, nullptr, FILE_BEGIN);
+        
+        return fptr;
+    }
+
+    if (*args.outputFilename.c_str() == '\0') // path is empty AND not in read mode, assume stdout
         return GetStdHandle(STD_OUTPUT_HANDLE);
 
-    HANDLE file = CreateFileA(
-        path,
-        is_reading ? GENERIC_READ : GENERIC_WRITE,
-        is_reading ? FILE_SHARE_READ : NULL,
+    DWORD disposition = OPEN_ALWAYS;
+    if (args.conversions & Conversion::EXCL)
+        disposition = CREATE_NEW; // fail if exists
+    else if (args.conversions & Conversion::NOCREAT)
+        disposition = OPEN_EXISTING; // fail if not found
+
+    HANDLE fptr = CreateFileA(
+        args.outputFilename.c_str(),
+        GENERIC_WRITE,
+        NULL,
         nullptr,
-        OPEN_ALWAYS,
+        disposition,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
         nullptr
     );
     
-    if (file == INVALID_HANDLE_VALUE)
-        return file;
+    if (fptr == INVALID_HANDLE_VALUE)
+        return fptr;
 
+    // truncate if notrunc is NOT specified
+    if (!(args.conversions & Conversion::NOTRUNC))
+    {
+        LARGE_INTEGER zero{};
+        SetFilePointerEx(fptr, zero, nullptr, FILE_BEGIN);
+        SetEndOfFile(fptr);
+    }
+
+    // seeking output by specified offset
     LARGE_INTEGER large_int{};
-    large_int.QuadPart = offset;
-    SetFilePointerEx(file, large_int, nullptr, FILE_BEGIN);
-    return file;
+    large_int.QuadPart = args.outputSeek;
+    SetFilePointerEx(fptr, large_int, nullptr, FILE_BEGIN);
+
+    return fptr; 
 }
 
 BOOL WinIO::write(const HANDLE file, const BYTE* data, const DWORD amount_bytes_to_write)

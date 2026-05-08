@@ -160,17 +160,24 @@ static short parse_flags(std::string_view input, bool is_conv)
     }
 
     // handle mutually exclusive flags
-    if (is_conv)
+    if (is_conv && IS_SET(flags, Conversion::LCASE) && IS_SET(flags, Conversion::UCASE))
     {
-        if (IS_SET(flags, Conversion::LCASE) && IS_SET(flags, Conversion::UCASE))
-            std::cerr << "dd: cannot combine lcase and ucase\n";
-        else if (IS_SET(flags, Conversion::EXCL) && IS_SET(flags, Conversion::NOCREAT))
-            std::cerr << "dd: cannot combine excl and nocreat\n";
-        else if (IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::EBCDIC)
-                || IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::IBM)
-                || IS_SET(flags, Conversion::EBCDIC) && IS_SET(flags, Conversion::IBM)
-                || IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::EBCDIC) && IS_SET(flags, Conversion::IBM))
-            std::cerr << "dd: cannot combine any two of {ascii,ebcdic,ibm}\n";
+        std::cerr << "dd: cannot combine lcase and ucase\n";
+        throw std::invalid_argument("mutually exclusive conversions");
+
+    }
+    else if (is_conv && IS_SET(flags, Conversion::EXCL) && IS_SET(flags, Conversion::NOCREAT))
+    {
+        std::cerr << "dd: cannot combine excl and nocreat\n";
+        throw std::invalid_argument("mutually exclusive conversions");
+
+    }
+    else if (is_conv && IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::EBCDIC)
+        || IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::IBM)
+        || IS_SET(flags, Conversion::EBCDIC) && IS_SET(flags, Conversion::IBM)
+        || IS_SET(flags, Conversion::ASCII) && IS_SET(flags, Conversion::EBCDIC) && IS_SET(flags, Conversion::IBM))
+    {
+        std::cerr << "dd: cannot combine any two of {ascii,ebcdic,ibm}\n";
         throw std::invalid_argument("mutually exclusive conversions");
     }
     

@@ -35,13 +35,13 @@ Skipping and seeking (`skip`, `iseek`, `oseek`, `seek`) | :white_check_mark:
 `count` option | :white_check_mark:
 Status indicator (`status`) | :white_check_mark:
 Friendly units (`b`, `k`, `M`, `G`, `kB`, `MB`, `GB`, etc.) | :white_check_mark:
-Conversions (`conv`, `cbs`, etc.) | :construction:
+Conversions (`conv`, `cbs`, `notrunc`, `lcase`, etc.) | :construction:
 Other flags (`iflag`, `oflag`, etc.) | :x:
-POSIX/GNU multipliers (`b`, `c`, `w`, `xm`, `k`) | :x:
 Help menu (`--help`) | :construction:
+POSIX/GNU multipliers (`b`, `c`, `w`, `xm`, `k`) | :x:
 Obscure features not on here (see below on suggestions) | :x:
 
-The first release will happen once basic functionality is achieved (all features up to status indicator). The full release will contain all the features above except for the last row.
+The first release will happen once basic functionality is achieved (all features up to status indicator). The full release will contain all the features above except for the last two row.
 
 ## Contributing
 To keep contributing easy, just follow these general guidelines:

@@ -1,15 +1,15 @@
 #include "CopyEngine.h"
-#include <iostream>
-#include <thread>
 #include "WinIO.h"
 #include "Status.h"
+#include <iostream>
+#include <thread>
 
 CopyEngine::CopyEngine(Arguments args)
 {
 	this->args = args;
 
-	inputFile = WinIO::open(args.inputFilename.c_str(), args.inputSeek);
-	outputFile = WinIO::open(args.outputFilename.c_str(), args.outputSeek, FALSE);
+	inputFile = WinIO::open(args, TRUE);
+	outputFile = WinIO::open(args, FALSE);
 	
 	// buffer capacity should be max(ibs, obs) for safety
 	bufCapacity = static_cast<DWORD>(max(args.inputBlockSize, args.outputBlockSize));
@@ -48,8 +48,8 @@ bool CopyEngine::performPrechecks()
 	if (inputFile == INVALID_HANDLE_VALUE)
 	{
 		std::cerr << "dd: failed to open '" << this->args.inputFilename << "': ";
-		WinIO::printError();
-		std::cerr << "\nHint: are you admin?\n";
+		WinIO::printError();			
+		std::cerr << "\nHint: are you admin?\nHint: the file may not exist";
 		return false;
 	}
 
@@ -57,6 +57,12 @@ bool CopyEngine::performPrechecks()
 	{
 		std::cerr << "dd: failed to open '" << this->args.outputFilename << "': ";
 		WinIO::printError();
+
+		if (this->args.conversions & Conversion::EXCL)
+			std::cerr << "\nHint: you have the excl conversion flag set";
+		if (this->args.conversions & Conversion::NOCREAT)
+			std::cerr << "\nHint: you have the nocreat conversion flag set";
+
 		std::cerr << "\nHint: are you admin?\n";
 		return false;
 	}
@@ -64,11 +70,25 @@ bool CopyEngine::performPrechecks()
 	return true;
 }
 
+inline bool CopyEngine::writeBlock(std::size_t block_sz)
+{
+	if (!WinIO::write(outputFile, this->buffer, block_sz))
+	{
+		inProgressCopying = false;
+		permissionToPrintError.wait();
+
+		std::cerr << "\r\033[2Kdd: failed to write to '" << this->args.outputFilename << "': ";
+		WinIO::printError();
+
+		return false;
+	}
+}
+
 void CopyEngine::runCopyJob()
 {
 	if (!performPrechecks())
 	{
-		// still allow monitoring to start but it will find that isStillCopying is false and die
+		// still allow monitoring to start but it will find that isStillCopying is false and terminate
 		permissionToStartMonitoring.count_down(); 
 		return;
 	}
@@ -87,7 +107,6 @@ void CopyEngine::runCopyJob()
 
 	// keep track how many bytes from the start of buffer contains meaningful but unwritten data
 	std::size_t meaningful = 0;
-	bool end_of_file = false;
 
 	inProgressCopying = true;
 	permissionToStartMonitoring.count_down(); // allow monitoring thread to proceed
@@ -95,10 +114,11 @@ void CopyEngine::runCopyJob()
 	// begin stopwatch
 	startTime = std::chrono::steady_clock::now(); 
 
-	// exit if end of file is reached or count is not 0 but the # of blocks read exceeded demand
+	// exit if end of file is reached 
+	bool end_of_file = false;
 	while (!end_of_file)
 	{
-		/* READ PHASE */
+		// READ PHASE: count is not 0 but the # of blocks read exceeded demand
 		if (!this->args.count || bytesCopied <= this->args.count * this->args.inputBlockSize)
 		{
 			// if buffer becomes full at any point OR disk size is reached, block reading until buffer is uncongested
@@ -106,7 +126,8 @@ void CopyEngine::runCopyJob()
 			DWORD bytes_actually_read = 0;
 
 			// read starting at meaningful point
-			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr))
+			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr)
+					&& !(this->args.conversions & Conversion::NOERR))
 			{
 				inProgressCopying = false;
 				permissionToPrintError.wait();
@@ -122,22 +143,59 @@ void CopyEngine::runCopyJob()
 				end_of_file = true;
 			else
 			{
-				meaningful += bytes_actually_read; // move meaningful boundary
+				// sync (pad with zeroes)
+				if ((this->args.conversions & Conversion::SYNC) && bytes_actually_read < this->args.inputBlockSize)
+				{
+					std::memset(this->buffer + meaningful + bytes_actually_read, 0, this->args.inputBlockSize - bytes_actually_read);
+					bytes_actually_read = this->args.inputBlockSize;
+				}
+
+				// swab (swap byte pairs)
+				if (this->args.conversions & Conversion::SWAB)
+					for (DWORD i = 0; i + 1 < bytes_actually_read; i += 2)
+						std::swap(this->buffer[meaningful + i], this->buffer[meaningful + i + 1]);
 
 				if (bytes_actually_read < this->args.inputBlockSize)
 					partialRecordsIn++;
 				else
 					wholeRecordsIn++;
+
+				// move meaningful boundary
+				meaningful += bytes_actually_read;
 			}
 		}
 		else
 			end_of_file = true; // done reading: finish writing and exit loop
 
+		/* READ PHASE DONE, WRITE PHASE BELOW */
+
 		// check whether if there is enough data to write one 'obs'-sized block
 		while (meaningful >= this->args.outputBlockSize)
 		{
-			if (WinIO::write(outputFile, this->buffer, this->args.outputBlockSize))
+			bool all_0s = false;
+
+			// sparse (skip blocks of zeroes)
+			if (this->args.conversions & Conversion::SPARSE)
 			{
+				all_0s = true;
+				const BYTE* ptr = this->buffer;
+				const BYTE* end = ptr + this->args.outputBlockSize;
+
+				while (ptr < end)
+				{
+					if (*ptr++ != 0) // zero chain broken
+					{
+						all_0s = false;
+						break;
+					}
+				}
+			}
+
+			if (!all_0s)
+			{
+				if (!writeBlock(this->args.outputBlockSize))
+					return;
+
 				// move meaningful boundary back by OBS bytes
 				meaningful -= this->args.outputBlockSize;
 				bytesCopied += this->args.outputBlockSize;
@@ -147,40 +205,33 @@ void CopyEngine::runCopyJob()
 				if (meaningful > 0)
 					std::memmove(this->buffer, this->buffer + this->args.outputBlockSize, meaningful);
 			}
-			else
-			{
-				inProgressCopying = false;
-				permissionToPrintError.wait();
-
-				std::cerr << "\r\033[2Kdd: failed to write to '" << this->args.outputFilename << "': ";
-				WinIO::printError();
-				
-				return;
-			}
 		}
 	}
 
 	// flush one last time if there is still meaningful data leftover
 	if (meaningful > 0)
 	{
-		if (!WinIO::write(outputFile, this->buffer, meaningful))
+		if (this->args.conversions & Conversion::SYNC)
 		{
-			inProgressCopying = false;
-			permissionToPrintError.wait();
-
-			std::cerr << "\r\033[2Kdd: failed to write to '" << this->args.outputFilename << "': ";
-			WinIO::printError();
-			
-			return;
+			std::memset(this->buffer + meaningful, 0, this->args.outputBlockSize - meaningful);
+			meaningful = this->args.outputBlockSize;
 		}
 
-		partialRecordsOut++;
+		if (!writeBlock(meaningful))
+			return;
+
 		bytesCopied += meaningful;
+
+		if (meaningful == this->args.outputBlockSize)
+			wholeRecordsOut++;
+		else
+			partialRecordsOut++;
 	}
 
 	inProgressCopying = false;
-	Status::displayRecordsSummary(wholeRecordsIn, wholeRecordsOut, partialRecordsIn, partialRecordsOut);
 
+	// display results
+	Status::displayRecordsSummary(wholeRecordsIn, wholeRecordsOut, partialRecordsIn, partialRecordsOut);
 	if (this->args.status != "noxfer")
 		Status::displayXferStats(inProgressCopying, startTime, bytesCopied);
 }
