@@ -2,7 +2,7 @@
 
 #include <string>
 
-#define IS_SET(x, flag) x & flag
+#define IS_SET(val, flag) (val & flag)
 
 enum Conversion : short
 {

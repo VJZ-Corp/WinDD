@@ -33,9 +33,9 @@ HANDLE WinIO::open(const Arguments& args, const BOOL is_reading)
         return GetStdHandle(STD_OUTPUT_HANDLE);
 
     DWORD disposition = OPEN_ALWAYS;
-    if (args.conversions & Conversion::EXCL)
+    if (IS_SET(args.conversions, Conversion::EXCL))
         disposition = CREATE_NEW; // fail if exists
-    else if (args.conversions & Conversion::NOCREAT)
+    else if (IS_SET(args.conversions, Conversion::NOCREAT))
         disposition = OPEN_EXISTING; // fail if not found
 
     HANDLE fptr = CreateFileA(
@@ -52,7 +52,7 @@ HANDLE WinIO::open(const Arguments& args, const BOOL is_reading)
         return fptr;
 
     // truncate if notrunc is NOT specified
-    if (!(args.conversions & Conversion::NOTRUNC))
+    if (!IS_SET(args.conversions, Conversion::NOTRUNC))
     {
         LARGE_INTEGER zero{};
         SetFilePointerEx(fptr, zero, nullptr, FILE_BEGIN);

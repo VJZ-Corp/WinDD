@@ -58,9 +58,9 @@ bool CopyEngine::performPrechecks()
 		std::cerr << "dd: failed to open '" << this->args.outputFilename << "': ";
 		WinIO::printError();
 
-		if (this->args.conversions & Conversion::EXCL)
+		if (IS_SET(this->args.conversions, Conversion::EXCL))
 			std::cerr << "\nHint: you have the excl conversion flag set";
-		if (this->args.conversions & Conversion::NOCREAT)
+		if (IS_SET(this->args.conversions, Conversion::NOCREAT))
 			std::cerr << "\nHint: you have the nocreat conversion flag set";
 
 		std::cerr << "\nHint: are you admin?\n";
@@ -127,7 +127,7 @@ void CopyEngine::runCopyJob()
 
 			// read starting at meaningful point
 			if (!ReadFile(inputFile, this->buffer + meaningful, bytes_to_read, &bytes_actually_read, nullptr)
-					&& !(this->args.conversions & Conversion::NOERR))
+					&& !IS_SET(this->args.conversions, Conversion::NOERR))
 			{
 				inProgressCopying = false;
 				permissionToPrintError.wait();
@@ -146,24 +146,24 @@ void CopyEngine::runCopyJob()
 				BYTE* block = this->buffer + meaningful;
 
 				// sync (pad with zeroes)
-				if ((this->args.conversions & Conversion::SYNC) && bytes_actually_read < this->args.inputBlockSize)
+				if (IS_SET(this->args.conversions, Conversion::SYNC) && bytes_actually_read < this->args.inputBlockSize)
 				{
 					std::memset(block + bytes_actually_read, 0, this->args.inputBlockSize - bytes_actually_read);
 					bytes_actually_read = this->args.inputBlockSize;
 				}
 
 				// swab (swap byte pairs)
-				if (this->args.conversions & Conversion::SWAB)
+				if (IS_SET(this->args.conversions, Conversion::SWAB))
 					for (DWORD i = 0; i + 1 < bytes_actually_read; i += 2)
 						std::swap(block[i], block[i + 1]);
 
 				// ucase (turns every ASCII character uppercase)
-				if (this->args.conversions & Conversion::UCASE)
+				if (IS_SET(this->args.conversions, Conversion::UCASE))
 					for (DWORD i = 0; i < bytes_actually_read; i++)
 						block[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(block[i])));
 
 				// lcase (turns every ASCII character lowercase)
-				if (this->args.conversions & Conversion::LCASE)
+				if (IS_SET(this->args.conversions, Conversion::LCASE))
 					for (DWORD i = 0; i < bytes_actually_read; i++)
 						block[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(block[i])));
 
@@ -187,7 +187,7 @@ void CopyEngine::runCopyJob()
 			bool all_zeros = false;
 
 			// sparse (skip blocks of zeroes)
-			if (this->args.conversions & Conversion::SPARSE)
+			if (IS_SET(this->args.conversions, Conversion::SPARSE))
 			{
 				all_zeros = true;
 				const BYTE* ptr = this->buffer;
@@ -223,7 +223,7 @@ void CopyEngine::runCopyJob()
 	// flush one last time if there is still meaningful data leftover
 	if (meaningful > 0)
 	{
-		if (this->args.conversions & Conversion::SYNC)
+		if (IS_SET(this->args.conversions, Conversion::SYNC))
 		{
 			std::memset(this->buffer + meaningful, 0, this->args.outputBlockSize - meaningful);
 			meaningful = this->args.outputBlockSize;
