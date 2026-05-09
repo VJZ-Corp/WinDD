@@ -74,6 +74,9 @@ static std::size_t handle_suffixes(const std::string& value)
         short exp = 0;
         switch (value[i])
         {
+        case 'B':
+            exp = 1;
+            break;
         case 'k':
             exp = 10;
             break;

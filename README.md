@@ -37,7 +37,7 @@ Status indicator (`status`) | :white_check_mark:
 Friendly units (`b`, `k`, `M`, `G`, `kB`, `MB`, `GB`, etc.) | :white_check_mark:
 Conversions (`conv`, `cbs`, `notrunc`, `lcase`, etc.) | :construction:
 Other flags (`iflag`, `oflag`, etc.) | :x:
-Help menu (`--help`) | :construction:
+Help menu (`--help`) | :white_check_mark:
 POSIX/GNU multipliers (`b`, `c`, `w`, `xm`, `k`) | :x:
 Obscure features not on here (see below on suggestions) | :x:
 
