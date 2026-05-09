@@ -143,17 +143,29 @@ void CopyEngine::runCopyJob()
 				end_of_file = true;
 			else
 			{
+				BYTE* block = this->buffer + meaningful;
+
 				// sync (pad with zeroes)
 				if ((this->args.conversions & Conversion::SYNC) && bytes_actually_read < this->args.inputBlockSize)
 				{
-					std::memset(this->buffer + meaningful + bytes_actually_read, 0, this->args.inputBlockSize - bytes_actually_read);
+					std::memset(block + bytes_actually_read, 0, this->args.inputBlockSize - bytes_actually_read);
 					bytes_actually_read = this->args.inputBlockSize;
 				}
 
 				// swab (swap byte pairs)
 				if (this->args.conversions & Conversion::SWAB)
 					for (DWORD i = 0; i + 1 < bytes_actually_read; i += 2)
-						std::swap(this->buffer[meaningful + i], this->buffer[meaningful + i + 1]);
+						std::swap(block[i], block[i + 1]);
+
+				// ucase (turns every ASCII character uppercase)
+				if (this->args.conversions & Conversion::UCASE)
+					for (DWORD i = 0; i < bytes_actually_read; i++)
+						block[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(block[i])));
+
+				// lcase (turns every ASCII character lowercase)
+				if (this->args.conversions & Conversion::LCASE)
+					for (DWORD i = 0; i < bytes_actually_read; i++)
+						block[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(block[i])));
 
 				if (bytes_actually_read < this->args.inputBlockSize)
 					partialRecordsIn++;
@@ -172,12 +184,12 @@ void CopyEngine::runCopyJob()
 		// check whether if there is enough data to write one 'obs'-sized block
 		while (meaningful >= this->args.outputBlockSize)
 		{
-			bool all_0s = false;
+			bool all_zeros = false;
 
 			// sparse (skip blocks of zeroes)
 			if (this->args.conversions & Conversion::SPARSE)
 			{
-				all_0s = true;
+				all_zeros = true;
 				const BYTE* ptr = this->buffer;
 				const BYTE* end = ptr + this->args.outputBlockSize;
 
@@ -185,13 +197,13 @@ void CopyEngine::runCopyJob()
 				{
 					if (*ptr++ != 0) // zero chain broken
 					{
-						all_0s = false;
+						all_zeros = false;
 						break;
 					}
 				}
 			}
 
-			if (!all_0s)
+			if (!all_zeros)
 			{
 				if (!writeBlock(this->args.outputBlockSize))
 					return;
