@@ -82,6 +82,8 @@ inline bool CopyEngine::writeBlock(std::size_t block_sz)
 
 		return false;
 	}
+
+	return true;
 }
 
 void CopyEngine::runCopyJob()
@@ -208,15 +210,16 @@ void CopyEngine::runCopyJob()
 				if (!writeBlock(this->args.outputBlockSize))
 					return;
 
-				// move meaningful boundary back by OBS bytes
-				meaningful -= this->args.outputBlockSize;
 				bytesCopied += this->args.outputBlockSize;
 				wholeRecordsOut++;
-
-				// minimal buffer compaction
-				if (meaningful > 0)
-					std::memmove(this->buffer, this->buffer + this->args.outputBlockSize, meaningful);
 			}
+
+			// move meaningful boundary back by OBS bytes
+			meaningful -= this->args.outputBlockSize;
+
+			// minimal buffer compaction
+			if (meaningful > 0)
+				std::memmove(this->buffer, this->buffer + this->args.outputBlockSize, meaningful);
 		}
 	}
 

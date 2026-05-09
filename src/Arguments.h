@@ -40,7 +40,7 @@ struct Arguments
     std::size_t count = 0; // Copy n ‘ibs’-byte blocks from the input file, instead of everything until the end of the file.
     std::string status = "none"; // Specify the amount of information printed. If this operand is given multiple times, the last one takes precedence.
     
-    short conversions; // Convert the file as specified by the conversion argument(s).
+    short conversions = 0; // Convert the file as specified by the conversion argument(s).
     std::string inputFlags; // Access the input file using the flags specified by the flag argument(s).
     std::string outputFlags; // Access the output file using the flags specified by the flag argument(s).
 };
