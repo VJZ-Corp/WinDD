@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
         }
         if (arg == "--version")
         {
-            std::cout << "dd (WinDD) 0.7.0\n"
+            std::cout << "dd (WinDD) 0.8.0\n"
                 << "Copyright (C) 2026 VJZ Corporation.\n"
                 << "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\n"
                 << "This is free software: you are free to change and redistribute it.\n"
