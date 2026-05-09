@@ -5,7 +5,7 @@ HANDLE WinIO::open(const Arguments& args, const BOOL is_reading)
 {
     if (is_reading)
     {
-        if (*args.inputFilename.c_str() == '\0') // path is empty (default), assume stdin
+        if (args.inputFilename.empty()) // path is empty (default), assume stdin
             return GetStdHandle(STD_INPUT_HANDLE);
 
         HANDLE fptr = CreateFileA(
@@ -29,7 +29,7 @@ HANDLE WinIO::open(const Arguments& args, const BOOL is_reading)
         return fptr;
     }
 
-    if (*args.outputFilename.c_str() == '\0') // path is empty AND not in read mode, assume stdout
+    if (args.outputFilename.empty()) // path is empty AND not in read mode, assume stdout
         return GetStdHandle(STD_OUTPUT_HANDLE);
 
     DWORD disposition = OPEN_ALWAYS;

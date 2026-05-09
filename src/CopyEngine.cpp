@@ -246,7 +246,9 @@ void CopyEngine::runCopyJob()
 	inProgressCopying = false;
 
 	// display results
-	Status::displayRecordsSummary(wholeRecordsIn, wholeRecordsOut, partialRecordsIn, partialRecordsOut);
+	Status::displayRecordsSummary(wholeRecordsIn, wholeRecordsOut, 
+									partialRecordsIn, partialRecordsOut, 
+									this->args.status == "progress");
 	if (this->args.status != "noxfer")
 		Status::displayXferStats(inProgressCopying, startTime, bytesCopied);
 }
@@ -262,6 +264,7 @@ void CopyEngine::monitorStatus()
 		{
 			Status::displayXferStats(inProgressCopying, startTime, bytesCopied.load());
 			std::this_thread::sleep_for(std::chrono::seconds(1));
+			std::cout << "\r\033[2K"; // move cursor to beginning and wipe line if status printing ongoing
 		}
 	}
 

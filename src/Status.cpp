@@ -1,9 +1,11 @@
 #include "Status.h"
 #include <iostream>
 
-void Status::displayRecordsSummary(std::size_t wri, std::size_t wro, std::size_t pri, std::size_t pro)
+void Status::displayRecordsSummary(std::size_t wri, std::size_t wro, std::size_t pri, std::size_t pro, bool status_prog)
 {
-	std::cout << "\r\033[2K"; // overwrite previous line
+	if (status_prog)
+		std::cout << '\n';
+
 	std::cout << wri << "+" << pri << " records in\n"
 			  << wro << "+" << pro << " records out\n";
 }
@@ -11,9 +13,6 @@ void Status::displayRecordsSummary(std::size_t wri, std::size_t wro, std::size_t
 void Status::displayXferStats(bool ongoing, std::chrono::steady_clock::time_point start, std::size_t bytes_copied)
 {
 	double elapsed_secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
-
-	if (ongoing)
-		std::cout << "\r\033[2K"; // move cursor to beginning and wipe line if status printing ongoing
 
 	std::cout << bytes_copied << " bytes";
 
