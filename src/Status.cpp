@@ -21,15 +21,22 @@ void Status::displayXferStats(bool ongoing, std::chrono::steady_clock::time_poin
 
 	if (bytes_copied >= 1024)
 	{
-		double mb = kb / 1000.0;
-		double mib = kib / 1024.0;
-		double gb = mb / 1000.0;
-		double gib = mib / 1024.0;
+		double mb = kb / 1000.0, mib = kib / 1024.0;
+		double gb = mb / 1000.0, gib = mib / 1024.0;
+		double tb = gb / 1000.0, tib = gib / 1024.0;
+		double pb = tb / 1000.0, pib = tib / 1024.0;
+		double eb = pb / 1000.0, eib = pib / 1024.0;
 
 		std::cout << " (";
 
 		// pick best decimal unit
-		if (gb >= 1.0)
+		if (eb >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << eb << " EB";
+		else if (pb >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << pb << " PB";
+		else if (tb >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << tb << " TB";
+		else if (gb >= 1.0)
 			std::cout << std::fixed << std::setprecision(1) << gb << " GB";
 		else if (mb >= 1.0)
 			std::cout << std::fixed << std::setprecision(1) << mb << " MB";
@@ -39,8 +46,14 @@ void Status::displayXferStats(bool ongoing, std::chrono::steady_clock::time_poin
 		std::cout << ", ";
 
 		// binary unit
-		if (gib >= 1.0)
-			std::cout << std::fixed << std::setprecision(1) << mb << " GiB";
+		if (eib >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << eib << " EiB";
+		else if (pib >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << pib << " PiB";
+		else if (tib >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << tib << " TiB";
+		else if (gib >= 1.0)
+			std::cout << std::fixed << std::setprecision(1) << gib << " GiB";
 		else if (mib >= 1.0)
 			std::cout << std::fixed << std::setprecision(1) << mib << " MiB";
 		else
